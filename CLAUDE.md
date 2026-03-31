@@ -97,6 +97,50 @@ Firebase real-time database 에 연결해줘
 
 ---
 
+### 7. 보안 강화 (인증 + 도메인 제한 + App Check)
+```
+보안 규칙 + 도메인 제한 + App Check하는 방안으로 코드를 수정해주세요
+```
+**결과:**
+- **익명 인증(Anonymous Auth)** 적용
+  - `firebase-auth-compat.js` SDK 추가
+  - `auth.signInAnonymously()` 로 자동 로그인
+  - 유저별 데이터 분리: `todos/{uid}` 경로 사용
+- **App Check (reCAPTCHA v3)** 적용
+  - `firebase-app-check-compat.js` SDK 추가
+  - reCAPTCHA v3 사이트 키로 `appCheck.activate()` 호출
+  - 승인된 도메인(`localhost`, `unit03.vercel.app`)에서만 요청 허용
+- **Firebase 보안 규칙** 변경 (콘솔에서 설정)
+  ```json
+  {
+    "rules": {
+      "todos": {
+        "$uid": {
+          ".read": "$uid === auth.uid",
+          ".write": "$uid === auth.uid"
+        }
+      }
+    }
+  }
+  ```
+
+**Firebase 콘솔 설정 필요 항목:**
+1. Authentication > 로그인 방법 > 익명 사용 설정
+2. App Check > 웹 앱 > reCAPTCHA v3 비밀 키 등록
+3. Realtime Database > 규칙 탭 > 인증 기반 규칙 적용
+
+---
+
+### 8. GitHub Push 및 Vercel 재배포
+```
+소스커밋하고 push, 사이트배포, claude.md에 기록 추가 해줘
+```
+**결과:**
+- 보안 강화 코드 커밋 및 GitHub push
+- Vercel 재배포
+
+---
+
 ## 기술 스택
 - **Frontend:** HTML, CSS, JavaScript (Vanilla)
 - **Database:** Firebase Realtime Database

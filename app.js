@@ -8,24 +8,61 @@ const firebaseConfig = {
     appId: "1:806288037508:web:87d2f42e79d8c17f16d4d1"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database().ref('todos');
+const app = firebase.initializeApp(firebaseConfig);
+
+// App Check - reCAPTCHA v3
+const appCheck = firebase.appCheck();
+appCheck.activate('6LdtKJ8sAAAAAMuInshrd6Jf4H5D3gApF8iCfxkl', true);
+
+// 익명 인증
+const auth = firebase.auth();
 
 const todoInput = document.getElementById('todoInput');
 const addBtn = document.getElementById('addBtn');
 const todoList = document.getElementById('todoList');
 
 let todos = {};
+let db = null;
+let currentListener = null;
 
-// Firebase에서 실시간 데이터 수신
-db.on('value', (snapshot) => {
-    todos = snapshot.val() || {};
-    renderTodos();
+auth.signInAnonymously().catch((error) => {
+    console.error('인증 실패:', error);
+    todoList.innerHTML = '<li class="todo-item" style="justify-content:center;color:#d9534f;">인증에 실패했습니다. 새로고침 해주세요.</li>';
+});
+
+auth.onAuthStateChanged((user) => {
+    if (user) {
+        // 유저별 데이터 경로
+        db = firebase.database().ref('todos/' + user.uid);
+
+        // 기존 리스너 해제
+        if (currentListener) {
+            currentListener.off();
+        }
+        currentListener = db;
+
+        // 실시간 데이터 수신
+        db.on('value', (snapshot) => {
+            todos = snapshot.val() || {};
+            renderTodos();
+        });
+
+        addBtn.disabled = false;
+        todoInput.disabled = false;
+    } else {
+        addBtn.disabled = true;
+        todoInput.disabled = true;
+    }
 });
 
 function renderTodos() {
     todoList.innerHTML = '';
     const keys = Object.keys(todos);
+
+    if (keys.length === 0) {
+        todoList.innerHTML = '<li class="todo-item empty-message">할일을 추가해 보세요!</li>';
+        return;
+    }
 
     keys.forEach((key) => {
         const todo = todos[key];
@@ -65,6 +102,7 @@ function renderTodos() {
 }
 
 function addTodo() {
+    if (!db) return;
     const text = todoInput.value.trim();
     if (!text) return;
     db.push({ text, completed: false });
@@ -73,10 +111,12 @@ function addTodo() {
 }
 
 function deleteTodo(key) {
+    if (!db) return;
     db.child(key).remove();
 }
 
 function toggleComplete(key) {
+    if (!db) return;
     db.child(key).update({ completed: !todos[key].completed });
 }
 
@@ -97,6 +137,7 @@ function startEdit(key) {
     saveBtn.textContent = '저장';
 
     function save() {
+        if (!db) return;
         const newText = input.value.trim();
         if (newText) {
             db.child(key).update({ text: newText });

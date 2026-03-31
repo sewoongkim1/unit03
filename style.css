@@ -154,6 +154,12 @@ h1 {
     background: #c12e2a;
 }
 
+.empty-message {
+    justify-content: center;
+    color: #aaa;
+    font-style: italic;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(-8px); }
     to { opacity: 1; transform: translateY(0); }
